@@ -26,7 +26,11 @@ formula_size(ID,Y):-for(ID,neg,D),formula_size(D,X),Y=X+1,X<size. %size of neg a
 formula_size(ID,T):-for(ID,or,D),formula_size(D,X1),formula_size(D+1,X2),T=X1+X2+1,X1<size,X2<size. %size of or as size of formula it refers + size of formula it refers +1
 formula_size(ID,T):-for(ID,and,D),formula_size(D,X1),formula_size(D+1,X2),T=X1+X2+1,X1<size,X2<size. %size of and as size of formula it refers + size of formula it refers +1
 %check that the size of the formula is the possible max
+
+
 :-#max{X:formula_size(1,X)}!=size. % formula size must be the max
+
+
 %we store how atoms classify examples
 classifies_pos(ID,X):-for(ID,atom,C),has(X,C),ID<=size.
 classifies_neg(ID,X):-for(ID,atom,C),not has(X,C),example_n(X),ID<=size. %atom does not have the attribute in example
@@ -42,6 +46,8 @@ classifies_pos(ID,X):-for(ID,and,D), classifies_pos(D,X),classifies_pos(D+1,X),I
 classifies_neg(ID,X):-for(ID,and,D), classifies_neg(D,X),ID<=size,D<=size.
 classifies_neg(ID,X):-for(ID,and,D), classifies_neg(D+1,X),ID<=size,D<=size.
 %we optimize the number of correct answers
+
+
 #maximize{1,X:classifies_pos(1,X),example(X,pos);1,X:classifies_neg(1,X),example(X,neg)}.
 
 %count for attributes
