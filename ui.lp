@@ -142,7 +142,7 @@ attr(menu_bar, icon, "fa-table-cells").
 % Create a button for setting the max/min error of the formula.
     elem(menu_bar_size, button, menu_bar).
     attr(menu_bar_size, label, "Set Size").
-    when(menu_bar_size, click, update, (set_error,visibility,visible)).
+    when(menu_bar_size, click, update, (set_size,visibility,visible)).
 
 % When the button is clicked, show a modal where the user can set a new size constant.
     
@@ -161,10 +161,14 @@ attr(menu_bar, icon, "fa-table-cells").
 
 
     when(set_size_button, click, call, 
-            (
-            add_atom(max_size(_context_value(new_max_size))),
-            add_atom(min_size(_context_value(new_min_size))))
-        ).
+        (
+            remove_atom(max_size(M)),
+            remove_atom(min_size(M)),
+            add_atom(maximum_size(_context_value(new_max_size))),
+            add_atom(minimum_size(_context_value(new_min_size))))
+        )
+            :-
+                max_size(M), min_size(M).
 
     % You get two textfields so the user can set a new number.
     elem(max_size, textfield, set_size_container).

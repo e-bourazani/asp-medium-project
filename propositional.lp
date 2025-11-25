@@ -3,15 +3,21 @@ operator(neg;and;or).
 double_operator(and;or).
 
 %generate rules for operators and atoms
-{for(ID,T,D)}:-ID=1..size,D=1..size,D>ID,operator(T). % generate operators
-{for(ID,atom,C)}:-ID=1..size,attribute(C). % generate atoms
+{for(ID,T,D)}:-ID=1..W,D=1..W,D>ID,operator(T),max_size(W).
+{for(ID,atom,C)}:-ID=1..W,attribute(C),max_size(W).
 
 %
 %constraints
 %
-:-{for(ID,_,_)}!=1,ID=1..size. % it cant be the case that we have no formula
-:-for(ID,T,D),double_operator(T),D>size-1. % it cant be the case that double operators refer to formulas out of bounds
-:-for(ID,neg,D),D>size. % it cant be the case that neg refers to formulas out of bounds
+:-{for(ID,_,_)}>1,ID=1..W,max_size(W).
+%:-{for(ID,_,_)}!=1,ID=1..size. % it cant be the case that we have no formula
+
+%:-for(ID,T,D),double_operator(T),D>size-1. % it cant be the case that double operators refer to formulas out of bounds
+:-for(ID,T,D),double_operator(T),D>W-1,max_size(W).
+
+%:-for(ID,neg,D),D>size. % it cant be the case that neg refers to formulas out of bounds
+:-for(ID,T,D),double_operator(T),D>W-1,max_size(W).
+
 :-for(ID,and,D),for(D,atom,A1),for(D+1,atom,A2),A2<=A1.  % it cant be the case that and refers to same atoms in different order
 :-for(ID,or,D),for(D,atom,A1),for(D+1,atom,A2),A2<=A1. % it cant be the case that or refers to same atoms in different order
 :-for(ID,and,D),for(D,T1,A1),for(D+1,atom,A2),operator(T1). % it cant be the case that and refers to non-atoms
@@ -21,53 +27,79 @@ double_operator(and;or).
 :-for(ID1,T1,D1),for(ID2,T2,D2),ID1<ID2,operator(T1),operator(T2),ID1!=ID2,D1>=D2. %it cant be the case that operators are not ordered by depth
 :-for(ID1,T1,D1), for(ID2,T2,D2), ID1 < ID2, double_operator(T1),operator(T2), D1+1>=D2. % it cant be the case that double operators are not ordered by depth
 
+
 %compute size of atoms as 1
 formula_size(ID,1):-for(ID,atom,_).%size of atoms is 1
 %negation of atoms as size formula they refers to +1
-formula_size(ID,Y):-for(ID,neg,D),formula_size(D,X),Y=X+1,X<size. %size of neg as size of formula it refers +1
+formula_size(ID,Y):-for(ID,neg,D),formula_size(D,X),Y=X+1.
 %size of or and and as size of formula they refers +1
-formula_size(ID,T):-for(ID,or,D),formula_size(D,X1),formula_size(D+1,X2),T=X1+X2+1,X1<size,X2<size. %size of or as size of formula it refers + size of formula it refers +1
-formula_size(ID,T):-for(ID,and,D),formula_size(D,X1),formula_size(D+1,X2),T=X1+X2+1,X1<size,X2<size. %size of and as size of formula it refers + size of formula it refers +1
+formula_size(ID,T):-for(ID,or,D),formula_size(D,X1),formula_size(D+1,X2),T=X1+X2+1.
+formula_size(ID,T):-for(ID,and,D),formula_size(D,X1),formula_size(D+1,X2),T=X1+X2+1.
+
 
 %%%%%%%%%%%%%%%%%%
 % Updated section%
 %%%%%%%%%%%%%%%%%%
 
+%%%%%%
+%Size%
+%%%%%%
+
 %check that the size of the formula is the possible max
-:-#max{X:formula_size(1,X)}!=size. % formula size must be the max
+%:-#max{X:formula_size(1,X)}!=size. % formula size must be the max
+
 
 max_size(M):- M = #max{X:maximum_size(X)}.
 min_size(M):- M = #max{X:minimum_size(X)}.
+
+:-formula_size(1,X),T=#count{ID:for(ID,_,_)},X!=T.
+:-for(_,T,ID),T!=atom, not for(ID,_,_).
+:-for(ID,_,_),not for(ID-1,_,_),ID!=1.
+:-T<W,min_size(W),T=#count{ID:for(ID,_,_)}.
+
+% Size constraints, logic rules about size
+:-for(T-1,and,_),T=#count{ID:for(ID,_,_)}.
+:-for(T-1,or,_),T=#count{ID:for(ID,_,_)}.
+:-for(T,neg,_),T=#count{ID:for(ID,_,_)}.
+:-for(_,and,T),T=#count{ID:for(ID,_,_)}.
+:-for(_,or,T),T=#count{ID:for(ID,_,_)}.
+:-for(_,neg,T),for(T,neg,_).
+
+
+%%%%%%%
+%Error%
+%%%%%%%
 
 % Confusion matrix of corre
 correct(X):- example(X,pos),classifies_pos(1,X).
 correct(X):- example(X,neg),classifies_neg(1,X).
 error(X):- example(X, pos), not correct(X).
 error(X):- example(X, neg), not correct(X).
+
 #maximize{1, X: correct(X)}.
 
 
 total_errors(E):- E = #count{X:error(X)}.
 
-:- total_errors(X), max_errors(Y), X>Y.
-:- total_errors(X), min_errors(Y), X<Y.
+%:- total_errors(X), max_errors(Y), X>Y.
+%:- total_errors(X), min_errors(Y), X<Y.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %we store how atoms classify examples
-classifies_pos(ID,X):-for(ID,atom,C),has(X,C),ID<=size.
-classifies_neg(ID,X):-for(ID,atom,C),not has(X,C),example_n(X),ID<=size. %atom does not have the attribute in example
+classifies_pos(ID,X):-for(ID,atom,C),has(X,C).
+classifies_neg(ID,X):-for(ID,atom,C),not has (X,C),example_n(X). %atom does not have the attribute in example
 %we store how negations classify examples
-classifies_pos(ID,X):-for(ID,neg,D),classifies_neg(D,X),ID<=size,D<=size. %negation of a formula that classifies neg is pos
-classifies_neg(ID,X):-for(ID,neg,D),classifies_pos(D,X),ID<=size,D<=size. %negation of a formula that classifies pos is neg
+classifies_pos(ID,X):-for(ID,neg,D),classifies_neg(D,X).%negation of a formula that classifies neg is pos
+classifies_neg(ID,X):-for(ID,neg,D),classifies_pos(D,X). %negation of a formula that classifies pos is neg
 %we store how "or" classifies examples
-classifies_pos(ID,X):-for(ID,or,D), classifies_pos(D,X),ID<=size,D<=size.
-classifies_pos(ID,X):-for(ID,or,D), classifies_pos(D+1,X),ID<=size,D<=size.
-classifies_neg(ID,X):-for(ID,or,D), classifies_neg(D,X), classifies_neg(D+1,X),ID<=size,D<=size.
+classifies_pos(ID,X):-for(ID,or,D), classifies_pos(D,X).
+classifies_pos(ID,X):-for(ID,or,D), classifies_pos(D+1,X).
+classifies_neg(ID,X):-for(ID,or,D), classifies_neg(D,X), classifies_neg(D+1,X).
 %we store how "and" classifies examples
-classifies_pos(ID,X):-for(ID,and,D), classifies_pos(D,X),classifies_pos(D+1,X),ID<=size,D<=size.
-classifies_neg(ID,X):-for(ID,and,D), classifies_neg(D,X),ID<=size,D<=size.
-classifies_neg(ID,X):-for(ID,and,D), classifies_neg(D+1,X),ID<=size,D<=size.
+classifies_pos(ID,X):-for(ID,and,D), classifies_pos(D,X),classifies_pos(D+1,X).
+classifies_neg(ID,X):-for(ID,and,D), classifies_neg(D,X).
+classifies_neg(ID,X):-for(ID,and,D), classifies_neg(D+1,X).
 
 %Modified so it works for ui.lp
 %we optimize the number of correct answers
