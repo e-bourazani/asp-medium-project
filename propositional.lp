@@ -1,22 +1,28 @@
+
+
 example_n(X):-example(X,_).
 operator(neg;and;or).
 double_operator(and;or).
 
 %generate rules for operators and atoms
-{for(ID,T,D)}:-ID=1..W,D=1..W,D>ID,operator(T),max_size(W).
-{for(ID,atom,C)}:-ID=1..W,attribute(C),max_size(W).
+{for(ID,T,D)}:-ID=1..M,D=1..M,D>ID,operator(T),max_size(M).
+{for(ID,atom,C)}:-ID=1..M,attribute(C),max_size(M).
 
 %
 %constraints
 %
-:-{for(ID,_,_)}>1,ID=1..W,max_size(W).
+
+:-formula_size(1,X),T=#count{ID:for(ID,_,_)},X!=T.
+:-for(_,T,ID),T!=atom, not for(ID,_,_).
+:-for(ID,_,_),not for(ID-1,_,_),ID!=1.
+
 %:-{for(ID,_,_)}!=1,ID=1..size. % it cant be the case that we have no formula
 
 %:-for(ID,T,D),double_operator(T),D>size-1. % it cant be the case that double operators refer to formulas out of bounds
-:-for(ID,T,D),double_operator(T),D>W-1,max_size(W).
+:-for(ID,T,D),double_operator(T),D>M-1,max_size(M).
 
 %:-for(ID,neg,D),D>size. % it cant be the case that neg refers to formulas out of bounds
-:-for(ID,T,D),double_operator(T),D>W-1,max_size(W).
+:-for(ID,T,D),double_operator(T),D>M-1,max_size(M).
 
 :-for(ID,and,D),for(D,atom,A1),for(D+1,atom,A2),A2<=A1.  % it cant be the case that and refers to same atoms in different order
 :-for(ID,or,D),for(D,atom,A1),for(D+1,atom,A2),A2<=A1. % it cant be the case that or refers to same atoms in different order
@@ -45,19 +51,20 @@ formula_size(ID,T):-for(ID,and,D),formula_size(D,X1),formula_size(D+1,X2),T=X1+X
 %Size%
 %%%%%%
 
-%check that the size of the formula is the possible max
+maximum_size(size).
+minimum_size(size).
+
+%previous check that the size of the formula is the possible max
 %:-#max{X:formula_size(1,X)}!=size. % formula size must be the max
 
-
+% Create a derivative atom from maximum/minimum_size.
 max_size(M):- M = #max{X:maximum_size(X)}.
 min_size(M):- M = #max{X:minimum_size(X)}.
 
-:-formula_size(1,X),T=#count{ID:for(ID,_,_)},X!=T.
-:-for(_,T,ID),T!=atom, not for(ID,_,_).
-:-for(ID,_,_),not for(ID-1,_,_),ID!=1.
+:-{for(ID,_,_)}>1,ID=1..W,max_size(W).
 :-T<W,min_size(W),T=#count{ID:for(ID,_,_)}.
 
-% Size constraints, logic rules about size
+% Size constraints, logic rules about IDs
 :-for(T-1,and,_),T=#count{ID:for(ID,_,_)}.
 :-for(T-1,or,_),T=#count{ID:for(ID,_,_)}.
 :-for(T,neg,_),T=#count{ID:for(ID,_,_)}.
@@ -70,19 +77,24 @@ min_size(M):- M = #max{X:minimum_size(X)}.
 %Error%
 %%%%%%%
 
-% Confusion matrix of corre
+%Modified so it works for ui.lp
+%we optimize the number of correct answers
+%#maximize{1,X:classifies_pos(1,X),example(X,pos);1,X:classifies_neg(1,X),example(X,neg)}.
+
+% Confusion matrix of correctness
 correct(X):- example(X,pos),classifies_pos(1,X).
 correct(X):- example(X,neg),classifies_neg(1,X).
-error(X):- example(X, pos), not correct(X).
-error(X):- example(X, neg), not correct(X).
+error(X):- example(X, pos), classifies_neg(1,X).
+error(X):- example(X, neg), classifies_pos(1,X).
 
 #maximize{1, X: correct(X)}.
-
-
 total_errors(E):- E = #count{X:error(X)}.
 
-%:- total_errors(X), max_errors(Y), X>Y.
-%:- total_errors(X), min_errors(Y), X<Y.
+max_error(X) :- maximum_error(X).
+min_error(X) :- minimum_error(X).
+
+:- total_errors(X), maximum_error(Y), X>Y.
+:- total_errors(X), min_errors(Y), X<Y.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -101,9 +113,7 @@ classifies_pos(ID,X):-for(ID,and,D), classifies_pos(D,X),classifies_pos(D+1,X).
 classifies_neg(ID,X):-for(ID,and,D), classifies_neg(D,X).
 classifies_neg(ID,X):-for(ID,and,D), classifies_neg(D+1,X).
 
-%Modified so it works for ui.lp
-%we optimize the number of correct answers
-#maximize{1,X:classifies_pos(1,X),example(X,pos);1,X:classifies_neg(1,X),example(X,neg)}.
+
 
 %count for attributes
 count_a(1..ATT_N) :- ATT_N = #count { 0,A : attribute(A) }.

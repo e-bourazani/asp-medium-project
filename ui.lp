@@ -98,7 +98,7 @@ attr(menu_bar, title, "Propositional").
 attr(menu_bar, icon, "fa-table-cells").
 
     %%%
-    % "Clear Assumptions" Button 
+    % "Restart" Button 
     %%%
     elem(menu_bar_clear, button, menu_bar).
     attr(menu_bar_clear, label, "Restart").
@@ -112,18 +112,14 @@ attr(menu_bar, icon, "fa-table-cells").
     elem(menu_bar_download, button, menu_bar).
     attr(menu_bar_download, label, "Save").
     attr(menu_bar_download, icon, "fa-save").
-    % The first elements define what will be saved (in this case, only the for atoms of our formula), 
-    % and the second element define the file it will be downloaded to.s
-    % Any way to make this dynamic? As in, the user can chose the name of the file or which atoms to download?
-    when(menu_bar_download, click, call, download("#show for/3.","instance_solution.lp")).
+    when(menu_bar_download, click, call, 
+        download("#show for/3.","instance_solution.lp")
+    ).
 
     %%%
-    % Select solution buttons. Works automatically.
+    % Iterate solutions buttons. Works automatically.
     %%%
-    %elem(menu_bar_select, button, menu_bar).
-    %attr(menu_bar_select, label, "Select solution").
-    %attr(menu_bar_select, icon, "fa-hand-pointer").
-    %when(menu_bar_select, click, callback, select).
+    
 
     elem(menu_bar_next, button, menu_bar).
     attr(menu_bar_next, label, "Next").
@@ -135,11 +131,11 @@ attr(menu_bar, icon, "fa-table-cells").
     attr(menu_bar_next_opt, icon, "fa-forward-step").
     when(menu_bar_next_opt, click, callback, next_solution(optN)).
 
+%%%%%%%%
+% Size %
+%%%%%%%%
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% Create a button for setting the max/min error of the formula.
+% Create a button for setting the size of the formula.
     elem(menu_bar_size, button, menu_bar).
     attr(menu_bar_size, label, "Set Size").
     when(menu_bar_size, click, update, (set_size,visibility,visible)).
@@ -161,14 +157,17 @@ attr(menu_bar, icon, "fa-table-cells").
 
 
     when(set_size_button, click, call, 
-        (
+        (   
             remove_atom(max_size(M)),
             remove_atom(min_size(M)),
+            remove_atom(maximum_size(M)),
+            remove_atom(minimum_size(M)),
             add_atom(maximum_size(_context_value(new_max_size))),
             add_atom(minimum_size(_context_value(new_min_size))))
         )
             :-
                 max_size(M), min_size(M).
+
 
     % You get two textfields so the user can set a new number.
     elem(max_size, textfield, set_size_container).
@@ -182,7 +181,9 @@ attr(menu_bar, icon, "fa-table-cells").
     when(min_size, input, context, (new_min_size, _value)).
 
 
-   
+
+%%%%%%%%%%
+%%Error%%%   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Create a button for setting the max/min error of the formula.
@@ -205,24 +206,35 @@ attr(menu_bar, icon, "fa-table-cells").
     attr(set_error_button, class, "m-1").
     attr(set_error_button, class, "btn-success").
 
+    
+    when(set_error_button, click, call, 
+        (   
+            remove_atom(max_error(M)),
+            remove_atom(min_error(M)),
+            remove_atom(maximum_error(M)),
+            remove_atom(minimum_error(M)),
+            add_atom(maximum_error(_context_value(new_max_error))),
+            add_atom(minimum_error(_context_value(new_min_error))))
+        )
+            :- max_error(M), min_error(M).
 
     when(set_error_button, click, call, 
-            (
-            add_atom(max_error(_context_value(new_max_error))),
-            add_atom(min_error(_context_value(new_min_error))))
-        ).
+        (   
+            add_atom(maximum_error(_context_value(new_max_error))),
+            add_atom(minimum_error(_context_value(new_min_error))))
+        )
+            :- not maximum_error(_), not minimum_error(_).
 
+
+    when(max_error_option(E), click, call, add_atom(max_error_count(E))) :- E=0..T,T=#count{X:example(X,_)}.
 
     % You get two textfields so the user can set a new number.
-    elem(max_error_text, textfield, set_error_container).
-    attr(max_error_text, placeholder, "Set max error").
-    attr(max_error_text, width, 450).
-    when(max_error_text, input, context, (new_max_error, _value)).
+    elem(max_error, textfield, set_error_container).
+    attr(max_error, placeholder, "Set max error").
+    attr(max_error, width, 450).
+    when(max_error, input, context, (new_max_error, _value)).
 
-    elem(min_error_text, textfield, set_error_container).
-    attr(min_error_text, placeholder, "Set min error").
-    attr(min_error_text, width, 450).
-    when(min_error_text, input, context, (new_min_error, _value)).
-
-
-
+    elem(min_error, textfield, set_error_container).
+    attr(min_error, placeholder, "Set min error").
+    attr(min_error, width, 450).
+    when(min_error, input, context, (new_min_error, _value)).
