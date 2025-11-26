@@ -129,13 +129,13 @@ attr(menu_bar, title, "Propositional").
 attr(menu_bar, icon, "fa-table-cells").
 
     %%%
-    % "Clear Assumptions" Button 
+    % "Restart" Button 
     %%%
     elem(menu_bar_clear, button, menu_bar).
-    attr(menu_bar_clear, label, "Clear").
+    attr(menu_bar_clear, label, "Restart").
     attr(menu_bar_clear, icon, "fa-trash").
     attr(menu_bar_clear, class, ("btn-outline-danger";"border-0")).
-    when(menu_bar_clear, click, callback, clear_assumptions).
+    when(menu_bar_clear, click, callback, restart).
 
     %%%
     % Save Button 
@@ -143,11 +143,14 @@ attr(menu_bar, icon, "fa-table-cells").
     elem(menu_bar_download, button, menu_bar).
     attr(menu_bar_download, label, "Save").
     attr(menu_bar_download, icon, "fa-save").
-    % The first elements define what will be saved (in this case, only the for atoms of our formula), 
-    % and the second element define the file it will be downloaded to.s
-    % Any way to make this dynamic? As in, the user can chose the name of the file or which atoms to download?
-    when(menu_bar_download, click, call, download("#show for/3.","instance_solution.lp")).
+    when(menu_bar_download, click, call, 
+        download("#show for/3.","instance_solution.lp")
+    ).
 
+    %%%
+    % Iterate solutions buttons. Works automatically.
+    %%%
+    
 
     elem(menu_bar_next, button, menu_bar).
     attr(menu_bar_next, label, "Next").
@@ -159,7 +162,110 @@ attr(menu_bar, icon, "fa-table-cells").
     attr(menu_bar_next_opt, icon, "fa-forward-step").
     when(menu_bar_next_opt, click, callback, next_solution(optN)).
 
+%%%%%%%%
+% Size %
+%%%%%%%%
+
+% Create a button for setting the size of the formula.
+    elem(menu_bar_size, button, menu_bar).
+    attr(menu_bar_size, label, "Set Size").
+    when(menu_bar_size, click, update, (set_size,visibility,visible)).
+
+% When the button is clicked, show a modal where the user can set a new size constant.
+    
+    elem(set_size,modal,w).
+    attr(set_size,title,"Size").
+
+    elem(set_size_container, container, set_size).
+    attr(set_size_container, flex_direction, "column").
+    attr(set_size_container, class, "align-items-end").
+
+    % Add button to apply new size
+    elem(set_size_button, button, set_size_container).
+    attr(set_size_button, label, "Apply").
+    attr(set_size_button, class, "m-1").
+    attr(set_size_button, class, "btn-success").
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
+    when(set_size_button, click, call, 
+        (   
+            remove_atom(max_size(M)),
+            remove_atom(min_size(M)),
+            remove_atom(maximum_size(M)),
+            remove_atom(minimum_size(M)),
+            add_atom(maximum_size(_context_value(new_max_size))),
+            add_atom(minimum_size(_context_value(new_min_size))))
+        )
+            :-
+                max_size(M), min_size(M).
 
+
+    % You get two textfields so the user can set a new number.
+    elem(max_size, textfield, set_size_container).
+    attr(max_size, placeholder, "Set max size").
+    attr(max_size, width, 450).
+    when(max_size, input, context, (new_max_size, _value)).
+
+    elem(min_size, textfield, set_size_container).
+    attr(min_size, placeholder, "Set min size").
+    attr(min_size, width, 450).
+    when(min_size, input, context, (new_min_size, _value)).
+
+
+
+%%%%%%%%%%
+%%Error%%%   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Create a button for setting the max/min error of the formula.
+    elem(menu_bar_error, button, menu_bar).
+    attr(menu_bar_error, label, "Set Error").
+    when(menu_bar_error, click, update, (set_error,visibility,visible)).
+
+% When the button is clicked, show a modal where the user can set a new size constant.
+    
+    elem(set_error,modal,w).
+    attr(set_error,title,"Error").
+
+    elem(set_error_container, container, set_error).
+    attr(set_error_container, flex_direction, "column").
+    attr(set_error_container, class, "align-items-end").
+
+    % Add button to apply new size
+    elem(set_error_button, button, set_error_container).
+    attr(set_error_button, label, "Apply").
+    attr(set_error_button, class, "m-1").
+    attr(set_error_button, class, "btn-success").
+
+    
+    when(set_error_button, click, call, 
+        (   
+            remove_atom(max_error(M)),
+            remove_atom(min_error(M)),
+            remove_atom(maximum_error(M)),
+            remove_atom(minimum_error(M)),
+            add_atom(maximum_error(_context_value(new_max_error))),
+            add_atom(minimum_error(_context_value(new_min_error))))
+        )
+            :- max_error(M), min_error(M).
+
+    when(set_error_button, click, call, 
+        (   
+            add_atom(maximum_error(_context_value(new_max_error))),
+            add_atom(minimum_error(_context_value(new_min_error))))
+        )
+            :- not maximum_error(_), not minimum_error(_).
+
+
+    when(max_error_option(E), click, call, add_atom(max_error_count(E))) :- E=0..T,T=#count{X:example(X,_)}.
+
+    % You get two textfields so the user can set a new number.
+    elem(max_error, textfield, set_error_container).
+    attr(max_error, placeholder, "Set max error").
+    attr(max_error, width, 450).
+    when(max_error, input, context, (new_max_error, _value)).
+
+    elem(min_error, textfield, set_error_container).
+    attr(min_error, placeholder, "Set min error").
+    attr(min_error, width, 450).
+    when(min_error, input, context, (new_min_error, _value)).
