@@ -82,19 +82,24 @@ min_size(M):- M = #max{X:minimum_size(X)}.
 %#maximize{1,X:classifies_pos(1,X),example(X,pos);1,X:classifies_neg(1,X),example(X,neg)}.
 
 % Confusion matrix of correctness
+
 correct(X):- example(X,pos),classifies_pos(1,X).
 correct(X):- example(X,neg),classifies_neg(1,X).
-error(X):- example(X, pos), classifies_neg(1,X).
-error(X):- example(X, neg), classifies_pos(1,X).
+failed(ID) :- example(ID,pos), not classifies_pos(1,ID).
+failed(ID) :- example(ID,neg), not classifies_neg(1,ID).
 
 #maximize{1, X: correct(X)}.
-total_errors(E):- E = #count{X:error(X)}.
+total_errors(E):- E = #count{X:failed(X)}.
 
 max_error(X) :- maximum_error(X).
 min_error(X) :- minimum_error(X).
 
 :- total_errors(X), maximum_error(Y), X>Y.
 :- total_errors(X), min_errors(Y), X<Y.
+
+%error(X):- example(X, pos), classifies_neg(1,X).
+%error(X):- example(X, neg), classifies_pos(1,X).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
